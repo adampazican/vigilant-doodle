@@ -1,4 +1,5 @@
 import * as React from 'react'
+import drawLine from '../drawLine'
 
 type Props = {
     height?: number
@@ -8,6 +9,8 @@ type Props = {
 type State = {
     mouseDown: boolean
     scale: number
+    oldX: number
+    oldY: number
     rects: {
         x: number
         y: number
@@ -23,7 +26,9 @@ class Canvas extends React.Component<Props, State> {
         this.state = {
             mouseDown: false,
             scale: 1,
-            rects: []
+            rects: [],
+            oldX: 0,
+            oldY: 0
         }
         this.canvasRef = React.createRef()
     }
@@ -65,10 +70,13 @@ class Canvas extends React.Component<Props, State> {
         const { height = 500, width = 500 } = this.props
         const { pageX, pageY } = event
         const ctx = this.canvasRef.current.getContext('2d')
+        const pencil = (x0: number, y0: number, w: number, h: number) =>
+            ctx.fillRect(x0, y0, 10 * this.state.scale, 10 * this.state.scale) 
 
         if(this.state.mouseDown){
-            ctx.fillRect(Math.round(pageX - canvasX), Math.round(pageY - canvasY), 10 * this.state.scale, 10 * this.state.scale)
-            
+            // ctx.fillRect(Math.round(pageX - canvasX), Math.round(pageY - canvasY), 10 * this.state.scale, 10 * this.state.scale)
+            drawLine(this.state.oldX, this.state.oldY, Math.round(pageX - canvasX), Math.round(pageY - canvasY), pencil)
+
             this.setState(state => ({
                 rects: [...state.rects.slice(0, state.rects.length-1), [...state.rects[state.rects.length-1] || [], {
                     x: (pageX - canvasX) / (height * this.state.scale),
@@ -77,6 +85,11 @@ class Canvas extends React.Component<Props, State> {
                 ]
             }))
         }
+
+        this.setState(state => ({ 
+            oldX: Math.round(pageX - canvasX),
+            oldY: Math.round(pageY - canvasY)
+        }))
     }
 
     private onMouseClick = async (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -87,6 +100,11 @@ class Canvas extends React.Component<Props, State> {
             this.reDraw()
         }
     }
+
+
+    /**
+     * Rerendering with scaling doesnt draw lines
+     */
 
     private reDraw(): void {
         const canvas = this.canvasRef.current
